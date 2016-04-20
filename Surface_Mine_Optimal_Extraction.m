@@ -8,22 +8,27 @@
 % optimize the value obtained by the miner.
 
 % Rules:
-% The miner can only move down left and right
-% At first the miner will look at only which block is greater in it's
-% immediate vacinity. When the miner mines a block it's value will be set 
+% 1. The miner can only move down left and right
+% 2. At first the miner will look at only which block is greater in it's
+%    immediate vacinity. 
+% 3. When the miner mines a block it's value will be set 
 % to zero.
+% 4. pit depth can only be 2 units deep before returning to the surface.
 
 %%Initialize Parameters
 
 cut_off_grade = 0.3;
-
+Depth_Limit = 3;
+min_Depth = 1;
 % X Boundary
-xmax = 10;
+xmax = 20;
 
 %Y Boundary
-ymax = 10;
+ymax = 20;
 
 %%Algorithm
+%Layer search
+
 Lith = rand(xmax,ymax);
 Lith(Lith<(cut_off_grade)) = 0;
 
@@ -37,38 +42,51 @@ end
 Index_Miner_Y = 1;
 imax = xmax.*ymax;
 
-Lith(Index_Miner_Y,Index_Miner_X)
+jmax = ymax;
+% Lith(Index_Miner_Y,Index_Miner_X);
 %Start the Miner
 Miner = Lith(Index_Miner_Y,Index_Miner_X);
 for i=1:imax
-    Lith(Index_Miner_Y,Index_Miner_X) = Miner;
-    Miner = 0;
-    if Index_Miner_X || Index_Miner_Y > 1
-    value_left = Lith(Index_Miner_Y,Index_Miner_X-1);
-    value_right = Lith(Index_Miner_Y,Index_Miner_X+1);
-    value_below = Lith(Index_Miner_Y+1,Index_Miner_X);
+    
+    %Find the shallowest Y value in the mine
+    for j = 1:jmax-1
+        while min_Depth < 0
+    min_Depth(1) = find(Lith(j,:)>0);
+        end
+    end
+    
+    if Index_Miner_Y <= Depth_Limit %If miner Y val <= depth limit
+        Lith(Index_Miner_Y,Index_Miner_X) = Miner;
+        Miner = 0;
+    if Index_Miner_X > 1 || Index_Miner_Y > 1 %Limit the miner to not travel beyond bounds
+        value_left = Lith(Index_Miner_Y,Index_Miner_X-1);
+        value_right = Lith(Index_Miner_Y,Index_Miner_X+1);
+        value_below = Lith(Index_Miner_Y+1,Index_Miner_X);
     if (value_below < value_left) && (value_right < value_left)
-       horiz_move = -1;
-       vert_move = 0;
-    elseif (value_below < value_right) && (value_left < value_right)
-        horiz_move = 1;
+        horiz_move = -1;
         vert_move = 0;
+    elseif (value_below < value_right) && (value_left < value_right)
+            horiz_move = 1;
+            vert_move = 0;
     elseif (value_right < value_below) && (value_left < value_below)
-        vert_move = 1;
-        horiz_move = 0;
+            vert_move = 1;
+            horiz_move = 0;
     end
     Index_Miner_X = Index_Miner_X + horiz_move;
     Index_Miner_Y = Index_Miner_Y + vert_move; 
-    else
+    else %Bounding the miner to the boundaries
        Index_Miner_X = Index_Miner_X+1;
        Index_Miner_Y = Index_Miner_Y+1;
     end
-    if Index_Miner_Y+vert_move > 1 || Index_Miner_X+horiz_move > 1
+    if Index_Miner_Y+vert_move > 1 || Index_Miner_X+horiz_move > 1 %Incremeting the miner
 Lith(Index_Miner_Y+vert_move,Index_Miner_X+horiz_move) = Miner;
 Miner = 0;
     else
         Index_Miner_Y = 1;
         Index_Miner_X = 1; 
+    end
+    else
+        Index_Miner_Y = min_Depth; 
     end
 %%Plot
 figure(1)
