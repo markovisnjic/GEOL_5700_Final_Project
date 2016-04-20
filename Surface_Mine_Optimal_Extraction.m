@@ -21,16 +21,18 @@ cut_off_grade = 0.3;
 Depth_Limit = 3;
 min_Depth = 1;
 % X Boundary
-xmax = 20;
+xmax = 200;
 
 %Y Boundary
-ymax = 20;
+ymax = 200;
 
 %%Algorithm
 %Layer search
+Lith = rand(ymax,xmax);
+filter = ones(4,4);
+Lith = filter2(filter,Lith);
 
-Lith = rand(xmax,ymax);
-Lith(Lith<(cut_off_grade)) = 0;
+%Lith(Lith<(cut_off_grade)) = 0;
 
 summation = (1:xmax-1);
 for i=1:xmax-1
