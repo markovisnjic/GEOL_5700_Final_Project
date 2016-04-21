@@ -21,15 +21,15 @@ cut_off_grade = 0.3;
 Depth_Limit = 3;
 min_Depth = 1;
 % X Boundary
-xmax = 200;
+xmax = 10;
 
 %Y Boundary
-ymax = 200;
+ymax = 10;
 
 %%Algorithm
 %Layer search
 Lith = rand(ymax,xmax);
-filter = ones(4,4);
+filter = ones(5,5);
 Lith = filter2(filter,Lith);
 
 %Lith(Lith<(cut_off_grade)) = 0;
@@ -48,6 +48,7 @@ jmax = ymax;
 % Lith(Index_Miner_Y,Index_Miner_X);
 %Start the Miner
 Miner = Lith(Index_Miner_Y,Index_Miner_X);
+Miner = 0;
 for i=1:imax
     
     %Find the shallowest Y value in the mine
@@ -60,7 +61,7 @@ for i=1:imax
     if Index_Miner_Y <= Depth_Limit %If miner Y val <= depth limit
         Lith(Index_Miner_Y,Index_Miner_X) = Miner;
         Miner = 0;
-    if Index_Miner_X > 1 || Index_Miner_Y > 1 %Limit the miner to not travel beyond bounds
+    if Index_Miner_X > 1 && Index_Miner_X < xmax && Index_Miner_Y < ymax %Limit the miner to not travel beyond bounds
         value_left = Lith(Index_Miner_Y,Index_Miner_X-1);
         value_right = Lith(Index_Miner_Y,Index_Miner_X+1);
         value_below = Lith(Index_Miner_Y+1,Index_Miner_X);
@@ -74,26 +75,35 @@ for i=1:imax
             vert_move = 1;
             horiz_move = 0;
     end
+   
     Index_Miner_X = Index_Miner_X + horiz_move;
-    Index_Miner_Y = Index_Miner_Y + vert_move; 
+    Index_Miner_Y = Index_Miner_Y + vert_move;
+    
     else %Bounding the miner to the boundaries
-       Index_Miner_X = Index_Miner_X+1;
-       Index_Miner_Y = Index_Miner_Y+1;
+       Index_Miner_X = xmax/2;
+       Index_Miner_Y = ymax/2;
     end
-    if Index_Miner_Y+vert_move > 1 || Index_Miner_X+horiz_move > 1 %Incremeting the miner
-Lith(Index_Miner_Y+vert_move,Index_Miner_X+horiz_move) = Miner;
-Miner = 0;
+    if Index_Miner_Y+vert_move >= 1 && Index_Miner_X > 1 && Index_Miner_X < xmax
+        Lith(Index_Miner_Y+vert_move,Index_Miner_X+horiz_move) = Miner;
+        Miner = 0;
+    elseif Index_Miner_X == 1 
+        Index_Miner_X = xmax/2; 
+    end
     else
-        Index_Miner_Y = 1;
-        Index_Miner_X = 1; 
+        Index_Miner_Y = min_Depth;
+        summation1 = (1:xmax-1);
+for eta=1:xmax-1
+    summation1(eta) = sum(Lith(1:3,eta));
+end
+[max_value2,Index_Miner_X]= max(summation1);
     end
-    else
-        Index_Miner_Y = min_Depth; 
-    end
+    
+    
 %%Plot
 figure(1)
 clf
 image(Lith,'CDataMapping','Scaled')
 colorbar
-pause(0.1)
+drawnow
+% pause(0.1)
 end
