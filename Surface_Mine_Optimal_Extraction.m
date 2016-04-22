@@ -13,51 +13,55 @@
 %    immediate vacinity. 
 % 3. When the miner mines a block it's value will be set 
 % to zero.
-% 4. pit depth can only be 2 units deep before returning to the surface.
+% 4. pit depth can only be Depth_Limit units deep before returning to the surface.
 
 %%Initialize Parameters
-
-cut_off_grade = 0.3;
-Depth_Limit = 3;
-min_Depth = 1;
 % X Boundary
-xmax = 10;
+xmax = 50;
 
 %Y Boundary
-ymax = 10;
+ymax = 50;
+
+Depth_Limit = 3; %How deep the miner can go without collapsing the pit 
+min_Depth = 1; %Shallowest soil depth value
+
 
 %%Algorithm
-%Layer search
-Lith = rand(ymax,xmax);
-filter = ones(5,5);
-Lith = filter2(filter,Lith);
 
-%Lith(Lith<(cut_off_grade)) = 0;
+%Defining Lithology
+Lith = rand(ymax,xmax); %Generate a random lithology
+filter = ones(3,6); %Corrolate it with a filter
+Lith = filter2(filter,Lith); %Final Lithology
 
+%Sum the first three cells of every column to find the starting point with
+%the greatest first three values
 summation = (1:xmax-1);
 for i=1:xmax-1
     summation(i) = sum(Lith(1:3,i));
 end
+
 [max_value,Index_Miner_X]= max(summation);
 
-% [T3_Max,Index_Miner_X]=Layer_Search_Type_2(cut_off_grade);
 Index_Miner_Y = 1;
 imax = xmax.*ymax;
 
 jmax = ymax;
-% Lith(Index_Miner_Y,Index_Miner_X);
+
 %Start the Miner
-Miner = Lith(Index_Miner_Y,Index_Miner_X);
 Miner = 0;
-for i=1:imax
+
+%Run the loop while there is still ore in the ground
+while sum(Lith(:,:)) > 0
     
     %Find the shallowest Y value in the mine
     for j = 1:jmax-1
         while min_Depth < 0
-    min_Depth(1) = find(Lith(j,:)>0);
+    min_Depth = find(Lith(j,:)>0,1,'last');
         end
     end
-    
+   
+if sum(Lith(min_Depth,:) > 0 )
+  
     if Index_Miner_Y <= Depth_Limit %If miner Y val <= depth limit
         Lith(Index_Miner_Y,Index_Miner_X) = Miner;
         Miner = 0;
@@ -65,6 +69,7 @@ for i=1:imax
         value_left = Lith(Index_Miner_Y,Index_Miner_X-1);
         value_right = Lith(Index_Miner_Y,Index_Miner_X+1);
         value_below = Lith(Index_Miner_Y+1,Index_Miner_X);
+        
     if (value_below < value_left) && (value_right < value_left)
         horiz_move = -1;
         vert_move = 0;
@@ -74,31 +79,48 @@ for i=1:imax
     elseif (value_right < value_below) && (value_left < value_below)
             vert_move = 1;
             horiz_move = 0;
-    end
+
    
-    Index_Miner_X = Index_Miner_X + horiz_move;
-    Index_Miner_Y = Index_Miner_Y + vert_move;
-    
-    else %Bounding the miner to the boundaries
-       Index_Miner_X = xmax/2;
-       Index_Miner_Y = ymax/2;
     end
-    if Index_Miner_Y+vert_move >= 1 && Index_Miner_X > 1 && Index_Miner_X < xmax
-        Lith(Index_Miner_Y+vert_move,Index_Miner_X+horiz_move) = Miner;
-        Miner = 0;
-    elseif Index_Miner_X == 1 
-        Index_Miner_X = xmax/2; 
+    if Index_Miner_Y == 1 || Lith(Index_Miner_Y-1,Index_Miner_X+horiz_move)==0 
+       
+       if value_below > 0 || value_left > 0 || value_right > 0 
+        Index_Miner_X = Index_Miner_X + horiz_move;
+        Index_Miner_Y = Index_Miner_Y + vert_move;
+       else
+        Index_Miner_X = find(Lith(Index_Miner_Y,:),1,'first');
+        Index_Miner_Y = find(Lith(:,Index_Miner_X),1,'first');     
+       end
+    else
+        Index_Miner_Y = Index_Miner_Y-1;
+    end
+    safe_catch_value = find(Lith(min_Depth,:),1,'last');
+    else %Bounding the miner to the boundaries
+       safe_catch_value = find(Lith(min_Depth,:),1,'last'); 
+       Index_Miner_X = safe_catch_value;
+       Index_Miner_Y = min_Depth;
     end
     else
         Index_Miner_Y = min_Depth;
         summation1 = (1:xmax-1);
 for eta=1:xmax-1
-    summation1(eta) = sum(Lith(1:3,eta));
+    summation1(eta) = sum(Lith(min_Depth:Depth_Limit,eta));
 end
 [max_value2,Index_Miner_X]= max(summation1);
+        
     end
+else
     
-    
+    min_Depth = min_Depth+1;
+    Index_Miner_Y = min_Depth;
+    summation2 = (1:xmax-1);
+    for gamma=1:xmax-1
+    summation2(gamma) = sum(Lith(min_Depth:Depth_Limit,gamma));
+    end
+[max_value3,Index_Miner_X]= max(summation2);
+Depth_Limit = Depth_Limit+1;
+end
+
 %%Plot
 figure(1)
 clf
